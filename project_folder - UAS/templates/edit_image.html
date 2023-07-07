@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+<head>
+    <title>Crop Image</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/css/bootstrap.min.css">
+    <style>
+        .col {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+                <div class="col">
+                    <h2>Image successfully uploaded and displayed below</h2>
+                    <form action="/resize_position" method="post"> 
+						<div class="mb-3">
+                            <img src="{{ url_for('display_image', filename=filename) }}">
+                        </div>
+                        <div class="mb-3">
+							<label for="file" class="form-label">Select image:</label>
+                            <input type="file" name="file" id="file" class="form-control-file" onchange="previewImage(event)">
+                        </div>
+                        <div class="mb-3" id="imagePreview"></div>
+                        <div class="mb-3" id="cropOptions" style="display: none;">
+                            <label for="position" class="form-label">Crop position:</label>
+                            <select name="position" id="position" class="form-select">
+                                <option value="top_left">Top Left</option>
+                                <option value="top_center">Top Center</option>
+                                <option value="top_right">Top Right</option>
+                                <option value="center_left">Center Left</option>
+                                <option value="center">Center</option>
+                                <option value="center_right">Center Right</option>
+                                <option value="bottom_left">Bottom Left</option>
+                                <option value="bottom_center">Bottom Center</option>
+                                <option value="bottom_right">Bottom Right</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="sizeInput" style="display: none;">
+                            <label for="size" class="form-label">Crop size:</label>
+                            <input type="number" name="size" id="size" class="form-control" min="1" value="100">
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="cropImage()">Crop</button>
+                    </form>
+                </div>
+                <div class="col">
+                    <h2>Cropped Result</h2>
+                    <div id="croppedImage" style="display: none;"></div>
+                    <button class="btn btn-primary download-btn" id="resetButton" onclick="resetForm()">Home</button>
+                </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function previewImage(event) {
+            var reader = new FileReader();
+            reader.onload = function() {
+                var imgElement = document.createElement("img");
+                imgElement.src = reader.result;
+                imgElement.style.maxWidth = "500px";
+                document.getElementById("imagePreview").innerHTML = "";
+                document.getElementById("imagePreview").appendChild(imgElement);
+                document.getElementById("cropOptions").style.display = "block";
+                document.getElementById("sizeInput").style.display = "block";
+                document.getElementById("size").max = Math.min(imgElement.naturalWidth, imgElement.naturalHeight);
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function cropImage() {
+            var sizeInput = document.getElementById("size");
+            var size = parseInt(sizeInput.value, 10);
+            var imgElement = document.getElementById("imagePreview").querySelector("img");
+            var maxWidth = imgElement.naturalWidth;
+            var maxHeight = imgElement.naturalHeight;
+
+            if (size > maxWidth || size > maxHeight) {
+                alert("Crop size cannot exceed the image size.");
+                return;
+            }
+
+            var formElement = document.getElementById("cropForm");
+            var formData = new FormData(formElement);
+
+            // Menyembunyikan elemen "Cropped Result"```html
+            document.getElementById("croppedImage").style.display = "none";
+
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/", true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var imgElement = document.createElement("img");
+                    imgElement.src = "data:image/jpeg;base64," + xhr.responseText;
+                    imgElement.style.maxWidth = "500px";
+                    document.getElementById("croppedImage").innerHTML = "";
+                    document.getElementById("croppedImage").appendChild(imgElement);
+                    document.getElementById("croppedImage").style.display = "block";
+                    document.getElementById("downloadMarkdownBtn").style.display = "inline-block";
+                    document.getElementById("downloadImageBtn").style.display = "inline-block";
+                }
+            };
+            xhr.send(formData);
+        }
+
+        function resetForm() {
+            document.getElementById("cropForm").reset();
+            document.getElementById("imagePreview").innerHTML = "";
+            document.getElementById("sizeInput").style.display = "none";
+            document.getElementById("cropOptions").style.display = "none";
+            document.getElementById("croppedImage").style.display = "none";
+            hideCropButton();
+            document.getElementById("croppedResult").style.display = "none";
+        }
+    </script>
+</body>
+</html>
